@@ -33,7 +33,7 @@ jobs:
       
       - name: Run Vivado in Docker
         run: |
-          docker run --rm -v ${{ github.workspace }}:/workspace -w /workspace xorgy/vivado vivado -mode batch -source ./scripts/synthesize.tcl
+          docker run --rm -v ${{ github.workspace }}:/workspace -w /workspace mjerabek/vivado vivado -mode batch -source ./scripts/synthesize.tcl
 
       - name: Synthesize Design
         run: |
