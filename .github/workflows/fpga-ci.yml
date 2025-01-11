@@ -20,7 +20,6 @@ jobs:
       - name: Install Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y vivado
 
   synthesize:
     name: Synthesize Design
@@ -31,6 +30,10 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v3
+      
+      - name: Run Vivado in Docker
+        run: |
+          docker run --rm -v ${{ github.workspace }}:/workspace -w /workspace xorgy/vivado vivado -mode batch -source ./scripts/synthesize.tcl
 
       - name: Synthesize Design
         run: |
