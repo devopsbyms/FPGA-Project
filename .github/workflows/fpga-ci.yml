@@ -1,0 +1,81 @@
+name: FPGA CI/CD Workflows
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  setup:
+    name: Setup Environment
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y vivado
+
+  synthesize:
+    name: Synthesize Design
+    runs-on: ubuntu-latest
+
+    needs: setup
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Synthesize Design
+        run: |
+          cd src
+          vivado -mode batch -source ../scripts/synthesize.tcl
+      
+      - name: Save Synthesized Bitstream
+        run: mkdir -p bitstream && mv *.bit bitstream/
+        if: success()
+
+      - name: Upload Synthesized Bitstream
+        uses: actions/upload-artifact@v3
+        with:
+          name: bitstream
+          path: bitstream/*.bit
+    
+  simulate:
+    name: Simulate Design
+    runs-on: ubuntu-latest
+    needs: setup
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Run Simulation
+        run: |
+          cd test
+          vivado -mode batch -source ../scripts/simulate.tcl
+  
+  deploy:
+    name: Deploy to FPGA Board
+    runs-on: ubuntu-latest
+    needs: [synthesize, simulate]
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Download Synthesized Bitstream
+        uses: actions/download-artifact@v3
+        with:
+          name: synthesize-bitstream
+          path: bitstream/
+
+      - name: Program FPGA
+        run: |
+          vivado -mode batch -source ../scripts/program_fpga.tcl -tclargs bitstream/*.bit
